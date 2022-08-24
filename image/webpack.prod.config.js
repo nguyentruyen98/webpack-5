@@ -3,16 +3,14 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin"); // tách biệt
 // const TerserPlugin = require("terser-webpack-plugin"); // minification bundle prodct k cần vì tự có
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const { ModuleFederationPlugin } = require("webpack").container;
 
 module.exports = {
-  entry: {
-    "hello-world": "./src/hello-world.js",
-    image: "./src/image.js",
-  },
+  entry: "./src/image.js",
   output: {
     filename: "[name].[contenthash].js",
     path: path.resolve(__dirname, "./dist"),
-    publicPath: "/static/",
+    publicPath: "http://localhost:9002/",
   },
   mode: "production",
   optimization: { splitChunks: { chunks: "all", minSize: 3000 } },
@@ -28,14 +26,6 @@ module.exports = {
         },
       },
       {
-        test: /\.txt$/,
-        type: "asset/source",
-      },
-      {
-        test: /\.css$/,
-        use: [MiniCssExtractPlugin.loader, "css-loader"],
-      },
-      {
         test: /\.scss$/,
         use: [MiniCssExtractPlugin.loader, "css-loader", "sass-loader"],
       },
@@ -46,7 +36,7 @@ module.exports = {
           loader: "babel-loader",
           options: {
             presets: ["@babel/env"],
-            plugins: ["@babel/plugin-proposal-class-properties"], //hhjghj
+            // plugins: ["@babel/plugin-proposal-class-properties"], //hhjghj
           },
         },
       },
@@ -61,20 +51,20 @@ module.exports = {
     new MiniCssExtractPlugin({ filename: "[name].[contenthash].css" }),
     new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
-      filename: "hello-world.html",
-      chunks: ["hello-world"],
-      title: "Hello world",
-      template: "src/page-template.hbs",
-      description: "Hello world",
-      minify: false,
-    }),
-    new HtmlWebpackPlugin({
       filename: "image.html",
-      chunks: ["image"],
       title: "Image",
       template: "src/page-template.hbs",
       description: "Image",
-      minify: false,
+    }),
+    new ModuleFederationPlugin({
+      name: "ImageApp",
+      filename: "remoteEntry.js",
+      exposes: {
+        "./KiwiPage": "./src/components/kiwi-page/kiwi-page.js",
+      },
+      remotes: {
+        CaptionApp: "CaptionApp@http://localhost:9003/remoteEntry.js",
+      },
     }),
   ],
 };
